@@ -1,9 +1,5 @@
 import numpy as np
-from sklearn.cluster import DBSCAN
-from sklearn import metrics
-from sklearn.datasets.samples_generator import make_blobs, make_circles
-from sklearn.preprocessing import StandardScaler
-import time
+from sklearn.datasets import make_blobs, make_circles, make_moons
 import matplotlib.pyplot as plt
 
 class DBSCANMy:
@@ -107,6 +103,8 @@ class DBSCANMy:
                     # plt.title(f'iter_plot, num: {iter_num}')
                     # plt.show()
 
+        plt.cla()
+        plt.scatter(show_data[:, 0], show_data[:, 1], c=self.target, marker='.')
         return self.target
 
     def region_query(self, Q):
@@ -138,65 +136,84 @@ class DBSCANMy:
             self.dist_matrix[Q, P] = self.dist_matrix[P, Q] = dist
             return dist
 
-# def get_data(data):
-#     switcher = {
-#         '1':
-#     }
+def get_data3():
+    eps = .3
+    minPnts = 10
+
+    noisy_moons = make_moons(n_samples=1500, noise=.05)[0]
+    return eps, minPnts, noisy_moons
+
 
 def get_data2():
-    eps = 0.3
+    eps = 0.1
     minPnts = 10
-    X1, Y1 = make_circles(n_samples=2000, factor=0.6, noise=0.05,
+    X1, Y1 = make_circles(n_samples=1500, factor=0.6, noise=0.05,
                           random_state=1)
-    X2, Y2 = make_blobs(n_samples=500, n_features=2, centers=[[1.5, 1.5]],
+    X2, Y2 = make_blobs(n_samples=300, n_features=2, centers=[[1.5, 1.5]],
                         cluster_std=[[0.1]], random_state=5)
 
     x = np.concatenate((X1, X2))
-    X = StandardScaler().fit_transform(x)
-    return x, X
+    return eps, minPnts, x
 
 def get_data1():
-    centers = [[1, 1], [-1, -1], [1, -1]]
-    x, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
-                                random_state=0)
-    X = StandardScaler().fit_transform(x)
-    return x, X
+    eps = 0.3
+    minPnts = 5
+    # x, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
+    #                             random_state=0)
+    random_state = 170
+    X, y = make_blobs(n_samples=1500, random_state=random_state)
+    transformation = [[0.6, -0.6], [-0.4, 0.8]]
+    X_aniso = np.dot(X, transformation)
+    aniso = (X_aniso, y)
+
+    return eps, minPnts, aniso[0]
+
+
 
 if __name__ == '__main__':
     # #############################################################################
     # Generate sample data
-    
+
+    np.random.seed(0)
+
+
     update_iter_x = input('每分类x个点更新图片，x=')
-    # print('默认数据集：（1，三个三点聚类集--通过sklearn中生成blobs）')
-    # print('默认数据集：（2，两环一团聚类集--通过sklearn中生成blobs）')
-    #
-    # data_select = input('请选择: ')
+    use_default = input('使用默认数据集((y)/n)：')
+    input_data = ''
+    eps, minPnts, x = None, None, None
 
-    eps = 0.1
-    minPnts = 10
+    if use_default == '' or use_default == 'y' or use_default == 'Y':
+        print('默认数据集：（1，三个三点聚类集--通过sklearn中生成blobs）')
+        print('默认数据集：（2，两环一团聚类集--通过sklearn中生成blobs）')
+        print('默认数据集：（3，两个月牙聚类集--通过sklearn中生成blobs）')
+
+        data_select = input('请选择: ')
+        data_switcher = {
+            '1': get_data1,
+            '2': get_data2,
+            '3': get_data3
+        }
 
 
-    centers = [[1, 1], [-1, -1], [1, -1]]
-    x, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
-                                random_state=0)
-    X = StandardScaler().fit_transform(x)
+        eps, minPnts, input_data = data_switcher[data_select]()
 
-    x, X = get_data2()
-    
-    dbs = DBSCANMy(x, 0.1, 10)
+
+    else:
+        file_path = input('请输入数据文件路径：')
+        input_data = np.loadtxt(file_path)
+        eps = input('eps=')
+        eps = float(eps)
+        minPnts = input('minPnts=')
+        minPnts = int(minPnts)
+
+
+    dbs = DBSCANMy(input_data, eps, minPnts)
 
     plt.ion()
-    target = dbs.DBSCAN(show_plot=True, show_data=x, update_iter=int(update_iter_x))
+    target = dbs.DBSCAN(show_plot=True, show_data=input_data, update_iter=int(update_iter_x))
 
-    
     plt.ioff()
     plt.cla()
     
-    plt.scatter(x=x[:, 0], y=x[:, 1], c=target, marker='.')
+    plt.scatter(x=input_data[:, 0], y=input_data[:, 1], c=target, marker='.')
     plt.show()
-
-    # end2 = time.time()
-
-    # print(end1 - start)
-    #
-    # print(end2 - end1)
