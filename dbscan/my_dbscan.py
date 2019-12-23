@@ -61,8 +61,6 @@ class DBSCANMy:
             plt.cla()
             plt.scatter(show_data[:, 0], show_data[:, 1], c=self.target, marker='.')
             plt.pause(0.001)
-            # plt.title('begin_plot:')
-            # plt.show()
 
         for P in range(self.Datas.shape[0]):
             # 检查当前点是否被遍历过
@@ -76,21 +74,21 @@ class DBSCANMy:
             # 开始一个新的聚类过程，因此聚类号加一
             self.C += 1
             self.target[P] = self.C
-            # 查看以当前点为中心，eps为半径的范围内存在多少个数据点
+            # 查看以当前点为中心，eps为半径的范围内存在多少个数据点，并将其作为队列开始循环
             seeds = np.setdiff1d(Neighbors1, P).tolist()
             while len(seeds) > 0:
-                # 画出中间图
-                
-                # 获取下一个点
-                Q = seeds[0]
+                # 知道当前队列为空
+                Q = seeds[0]                            # 获取下一个点
                 if self.target[Q] == self.__NOISE:
-                    self.target[Q] = self.C
+                    self.target[Q] = self.C             # 若已经是噪声点，直接将其归属到当前的聚类
                 if self.target[Q] != self.__UNVISIT:
-                    seeds = seeds[1:]
+                    seeds = seeds[1:]                   # 若当前点已经遍历过或为noise点，则选择下一个点
                     continue
-                self.target[Q] = self.C
+                self.target[Q] = self.C                 # 设置当前点归属
+                # 获取当前点的邻居
                 Neighbors2 = self.region_query(Q)
                 if len(Neighbors2) >= self.minPts:
+                    # 若邻居集合中的点数量大于超参数给出的minPts，则将其加入队列（去重）
                     for i in range(len(Neighbors2)):
                         if Neighbors2[i] not in seeds:
                             seeds.append(Neighbors2[i])
@@ -100,8 +98,6 @@ class DBSCANMy:
                     plt.cla()
                     plt.scatter(show_data[:, 0], show_data[:, 1], c=self.target, marker='.')
                     plt.pause(0.001)
-                    # plt.title(f'iter_plot, num: {iter_num}')
-                    # plt.show()
 
         plt.cla()
         plt.scatter(show_data[:, 0], show_data[:, 1], c=self.target, marker='.')
