@@ -81,11 +81,19 @@ class gmm:
         # NK = np.sum(gamma, axis=1)
 
 
-    def fit(self, X, times):
+    def fit(self, X, threshold):
         X = self._scale_data(X)
-        for i in range(times):
+        preL = -np.inf
+        while True:
             gamma = self._e_step(X)
             self._m_step(X, gamma)
+            curL = self._likehoodloss(X)
+
+            if self._stop_iterator_strategy(threshold, curL, preL):
+                break
+
+            preL = curL
+
         gamma = self._e_step(X)
         cluster = np.argmax(gamma, axis=1)
 
@@ -99,6 +107,12 @@ class gmm:
 
         return X
 
+    def _likehoodloss(self, X):
+        curL = np.sum(np.log(np.sum(X * self.alpha, axis=1)))
+        return curL
+
+    def _stop_iterator_strategy(self, threshold, predL, curL):
+        return np.abs(curL - predL) < threshold
 
 
 if __name__ == '__main__':
@@ -113,7 +127,7 @@ if __name__ == '__main__':
     X = np.loadtxt('gmm.data')
 
     model = gmm(X.shape, 2)
-    cluster = model.fit(X.copy(), 100)
+    cluster = model.fit(X.copy(), 1e-15)
     cluster = np.array(cluster).squeeze()
 
     plt.scatter(X[:, 0], X[:, 1], c=cluster, marker='.')
