@@ -38,10 +38,19 @@ class gmm:
             coef3 = 1 / (coef1 * coef2)
             shift = X - self.mu[k]
             sigma = la.inv(self.cov[k])
-            e_part = np.exp(np.sum(-0.5 * shift.dot(sigma) * shift, axis=1))
+            e_part = np.exp(np.sum(-0.5 * shift.dot(sigma) * shift, axis=1))    # (N,)
 
             phi[:, k] = coef3 * e_part
 
+
+    def _phi_by_matrix(self, X):
+        # det(cov) (K,D,D) => (K,)
+        coef = 1 / (np.power((2 * np.pi), self.D / 2.0) * np.power(la.det(self.cov), 0.5))
+        XK = np.array([X] * self.K)  # K * N * D
+        shift = XK - self.mu[:, np.newaxis, :]  # (K, N, D) - (K, 1, D)
+        sigma = la.inv(self.cov)  # (K, D, D)
+        # (K,N,D) @ (K,D,D) * (K,N,D) ==sum==> (K, N)=,T=>(N,K)
+        phi = coef[np.newaxis, :] * (np.exp(np.sum(-0.5 * (shift @ sigma) * shift, axis=2)).T)   # (N, K)
         return phi
 
     def _e_step(self, X):
@@ -80,7 +89,7 @@ class gmm:
 
     def _e_step_by_matrix(self, X):
 
-        prob = self._phi(X)
+        prob = self._phi_by_matrix(X)
 
         gamma = np.multiply(prob, self.alpha)
 
@@ -163,8 +172,8 @@ if __name__ == '__main__':
 
     start1 = time.time()
     cluster = model.fit(X.copy(), 1e-15)
-    cluster = np.array(cluster).squeeze()
     end1 = time.time()
+    cluster = np.array(cluster).squeeze()
     print(end1 - start1)      # data2--使用矩阵运算与for循环时间差大约12倍
 
     plt.scatter(X[:, 0], X[:, 1], c=cluster, marker='.')
